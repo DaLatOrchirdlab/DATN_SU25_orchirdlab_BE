@@ -36,7 +36,7 @@ namespace orchid_backend_net.Application.Tasks.CreateTask
     }
 
     internal class CreateTaskCommandHandler(ITaskRepository taskRepository, ILinkedRepository linkedRepository, 
-        ICurrentUserService currentUserService, ISender sender, IMethodRepository methodRepository, IStageRepository stageRepository) : IRequestHandler<CreateTaskCommand, string>
+        ICurrentUserService currentUserService, ISender sender) : IRequestHandler<CreateTaskCommand, string>
     {
 
         public async Task<string> Handle(CreateTaskCommand request, CancellationToken cancellationToken)

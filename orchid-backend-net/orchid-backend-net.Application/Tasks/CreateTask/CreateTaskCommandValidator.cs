@@ -8,12 +8,14 @@ namespace orchid_backend_net.Application.Tasks.CreateTask
         private readonly IExperimentLogRepository _experimentLogRepository;
         private readonly IStageRepository _stageRepository;
         private readonly ISampleRepository _sampleRepository;
+        private readonly IMethodRepository _methodRepository;
         public CreateTaskCommandValidator(IStageRepository stageRepository, IUserRepository userRepository,
-            IExperimentLogRepository experimentLogRepository, ISampleRepository sampleRepository)
+            IExperimentLogRepository experimentLogRepository, ISampleRepository sampleRepository, IMethodRepository methodRepository)
         {
             _stageRepository = stageRepository;
             _experimentLogRepository = experimentLogRepository;
             _sampleRepository = sampleRepository;
+            _methodRepository = methodRepository;
             Configuration();
         }
 
@@ -50,8 +52,8 @@ namespace orchid_backend_net.Application.Tasks.CreateTask
                 .NotNull()
                 .NotEmpty()
                 .WithMessage("Stage cannot be null or empty.");
-            RuleFor(x => x.StageID)
-                .MustAsync(async (id, cancellationToken) => await IsStageExist(id, cancellationToken))
+            RuleFor(x => x)
+                .MustAsync(async (x, cancellationToken) => await IsStageExist(x.ExperimentLogID, x.StageID, cancellationToken))
                 .WithMessage(x => $"Cannot find stage with id: {x.StageID}.");
 
             RuleFor(x => x.SampleID)
@@ -63,8 +65,12 @@ namespace orchid_backend_net.Application.Tasks.CreateTask
                 .WithMessage(x => $"Cannot find sample with id: {x.SampleID}");
         }
 
-        private async Task<bool> IsStageExist(string stageId, CancellationToken cancellationToken)
-            => await _stageRepository.AnyAsync(x => x.ID.Equals(stageId), cancellationToken);
+        private async Task<bool> IsStageExist(string experimentLogId, string stageId, CancellationToken cancellationToken)
+        {
+            var experimentLog = await _experimentLogRepository.FindAsync(x => x.ID.Equals(experimentLogId),cancellationToken);
+            var method = await _methodRepository.FindAsync(x => x.ID.Equals(experimentLog.MethodID), cancellationToken);
+            return await _stageRepository.AnyAsync(x => x.MethodID.Equals(method.ID) && x.ID.Equals(stageId), cancellationToken);
+        }
 
         private async Task<bool> IsExperimentLogExist(string experimentLogId, CancellationToken cancellationToken)
             => await _experimentLogRepository.AnyAsync(x => x.ID.Equals(experimentLogId), cancellationToken);
